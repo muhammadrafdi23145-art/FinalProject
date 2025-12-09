@@ -7,10 +7,10 @@ import math
 # ===============================
 # LOAD MODEL & SCALER
 # ===============================
-with open("models/models.pkl", "rb") as f:
+with open("models.pkl", "rb") as f:
     models = pickle.load(f)
 
-with open("models/scaler.pkl", "rb") as f:
+with open("scaler.pkl", "rb") as f:
     scaler = pickle.load(f)
 
 # ===============================
