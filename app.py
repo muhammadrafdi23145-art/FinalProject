@@ -18,7 +18,7 @@ with open("scaler.pkl", "rb") as f:
 # ===============================
 
 st.title("Prediksi Harga Saham BBRI H+1")
-st.write("Aplikasi ini memprediksi harga saham BBRI untuk H+1 menggunakan Linear Regression, Random Forest, dan SVR.")
+st.write("Website ini memprediksi harga saham BBRI untuk H+1 menggunakan Linear Regression, Random Forest, dan SVR.")
 
 st.subheader("Input Data Hari Ini")
 
