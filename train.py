@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 # ======================================
 # 1. LOAD DATA
 # ======================================
-df = pd.read_csv("data/BBRI.csv")
+df = pd.read_csv("BBRI.csv")
 df['timestamp'] = pd.to_datetime(df['timestamp'])
 
 # --------------------------------------
