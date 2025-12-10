@@ -60,9 +60,9 @@ if st.button("Prediksi Harga Besok (H+1)"):
     scaled = scaler.transform(features)
 
     # Prediksi return
-    pred_lr  = models['Linear Regression'].predict(scaled)[0]
-    pred_rf  = models['Random Forest'].predict(features)[0]
-    pred_svr = models['SVR'].predict(scaled)[0]
+    pred_lr  = models['Linear Regression'].predict(input_scaled)[0]
+    pred_rf  = models['Random Forest'].predict(input_df)[0]   # PENTING
+    pred_svr = models['SVR'].predict(input_scaled)[0]
 
     # Konversi return → harga besok
     price_lr  = close_val * math.exp(pred_lr)
