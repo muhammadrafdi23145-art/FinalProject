@@ -89,10 +89,10 @@ models['SVR'] = svr
 # ======================================
 # 5. SAVE MODEL DAN SCALER
 # ======================================
-with open("models/models.pkl", "wb") as f:
+with open("models.pkl", "wb") as f:
     pickle.dump(models, f)
 
-with open("models/scaler.pkl", "wb") as f:
+with open("scaler.pkl", "wb") as f:
     pickle.dump(scaler, f)
 
 print("Training selesai! Model & scaler berhasil disimpan.")
