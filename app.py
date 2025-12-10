@@ -78,51 +78,47 @@ if st.button("Prediksi Harga Besok (H+1)"):
 # =======================
 st.subheader("Grafik Prediksi Model vs Harga Asli (200 Hari Terakhir)")
 
-
 try:
-df = pd.read_csv("BBRI.csv")
-df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df = pd.read_csv("BBRI.csv")
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
 
+    df['Close_Log'] = np.log(df['close'])
+    df['MA5_Log'] = df['Close_Log'].rolling(5).mean()
+    df['Target_Return'] = df['Close_Log'].shift(-1) - df['Close_Log']
+    df['Feat_Return_1d'] = df['Close_Log'] - df['Close_Log'].shift(1)
+    df['Feat_Close_Open'] = df['Close_Log'] - np.log(df['open'])
+    df['Feat_High_Low'] = np.log(df['high']) - np.log(df['low'])
+    df['Feat_Dist_MA5'] = df['Close_Log'] - df['MA5_Log']
+    df['Feat_Vol_Change'] = np.log(df['volume']+1) - np.log(df['volume'].shift(1)+1)
+    df.dropna(inplace=True)
 
-df['Close_Log'] = np.log(df['close'])
-df['MA5_Log'] = df['Close_Log'].rolling(5).mean()
-df['Target_Return'] = df['Close_Log'].shift(-1) - df['Close_Log']
-df['Feat_Return_1d'] = df['Close_Log'] - df['Close_Log'].shift(1)
-df['Feat_Close_Open'] = df['Close_Log'] - np.log(df['open'])
-df['Feat_High_Low'] = np.log(df['high']) - np.log(df['low'])
-df['Feat_Dist_MA5'] = df['Close_Log'] - df['MA5_Log']
-df['Feat_Vol_Change'] = np.log(df['volume']+1) - np.log(df['volume'].shift(1)+1)
-df.dropna(inplace=True)
+    features = ['Feat_Return_1d','Feat_Close_Open','Feat_High_Low','Feat_Dist_MA5','Feat_Vol_Change']
+    X = df[features]
+    X_scaled_hist = scaler.transform(X)
 
+    preds_hist = {
+        'Linear Regression': models['Linear Regression'].predict(X_scaled_hist),
+        'Random Forest': models['Random Forest'].predict(X),
+        'SVR': models['SVR'].predict(X_scaled_hist)
+    }
 
-features = ['Feat_Return_1d','Feat_Close_Open','Feat_High_Low','Feat_Dist_MA5','Feat_Vol_Change']
-X = df[features]
-X_scaled_hist = scaler.transform(X)
+    df['Pred_LR'] = df['close'] * np.exp(preds_hist['Linear Regression'])
+    df['Pred_RF'] = df['close'] * np.exp(preds_hist['Random Forest'])
+    df['Pred_SVR'] = df['close'] * np.exp(preds_hist['SVR'])
 
+    last_n = 200
+    plt.figure(figsize=(12,5))
+    plt.plot(df['timestamp'].tail(last_n), df['close'].tail(last_n), label='Actual', linewidth=2)
+    plt.plot(df['timestamp'].tail(last_n), df['Pred_LR'].tail(last_n), '--', label='Linear Regression')
+    plt.plot(df['timestamp'].tail(last_n), df['Pred_RF'].tail(last_n), label='Random Forest')
+    plt.plot(df['timestamp'].tail(last_n), df['Pred_SVR'].tail(last_n), ':', label='SVR')
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.tight_layout()
+    st.pyplot(plt)
 
-preds_hist = {
-'Linear Regression': models['Linear Regression'].predict(X_scaled_hist),
-'Random Forest': models['Random Forest'].predict(X),
-'SVR': models['SVR'].predict(X_scaled_hist)
-}
-
-
-df['Pred_LR'] = df['close'] * np.exp(preds_hist['Linear Regression'])
-df['Pred_RF'] = df['close'] * np.exp(preds_hist['Random Forest'])
-df['Pred_SVR'] = df['close'] * np.exp(preds_hist['SVR'])
-
-
-last_n = 200
-plt.figure(figsize=(12,5))
-plt.plot(df['timestamp'].tail(last_n), df['close'].tail(last_n), label='Actual', linewidth=2)
-plt.plot(df['timestamp'].tail(last_n), df['Pred_LR'].tail(last_n), '--', label='Linear Regression')
-plt.plot(df['timestamp'].tail(last_n), df['Pred_RF'].tail(last_n), label='Random Forest')
-plt.plot(df['timestamp'].tail(last_n), df['Pred_SVR'].tail(last_n), ':', label='SVR')
-plt.xticks(rotation=45)
-plt.legend()
-plt.tight_layout()
-st.pyplot(plt)
-
+except Exception as e:
+    st.warning(f"Grafik tidak bisa ditampilkan: {e}")
 
 # ===========================
 # TABEL EVALUASI MODEL
