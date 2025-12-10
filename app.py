@@ -124,30 +124,27 @@ except Exception as e:
 # TABEL EVALUASI MODEL
 # ===========================
 
-
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-
-st.subheader("Evaluasi Model (RMSE, MAE, R²)")
-
+st.subheader("📊 Evaluasi Model (RMSE, MAE, R²)")
 
 eval_data = []
-for name in ['Linear Regression','Random Forest','SVR']:
-preds = df[f'Pred_{"LR" if name=="Linear Regression" else "RF" if name=="Random Forest" else "SVR"}']
-actual = df['close']
 
+for name in ['Linear Regression', 'Random Forest', 'SVR']:
+    col = (
+        'Pred_LR' if name == "Linear Regression" else
+        'Pred_RF' if name == "Random Forest" else
+        'Pred_SVR'
+    )
 
-rmse = mean_squared_error(actual, preds, squared=False)
-mae = mean_absolute_error(actual, preds)
-r2 = r2_score(actual, preds)
+    preds = df[col]
+    actual = df['close']
 
+    rmse = mean_squared_error(actual, preds, squared=False)
+    mae = mean_absolute_error(actual, preds)
+    r2 = r2_score(actual, preds)
 
-eval_data.append([name, rmse, mae, r2])
-
+    eval_data.append([name, rmse, mae, r2])
 
 eval_df = pd.DataFrame(eval_data, columns=["Model", "RMSE", "MAE", "R²"])
 st.dataframe(eval_df)
-
-
-except Exception as e:
-st.warning(f"Grafik & evaluasi tidak bisa ditampilkan: {e}")(f"Grafik tidak bisa ditampilkan: {e}")
