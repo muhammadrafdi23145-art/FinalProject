@@ -164,5 +164,5 @@ try:
     st.dataframe(eval_df)
 
 except Exception as e:
-    st.warning(f\"Grafik & evaluasi tidak bisa ditampilkan: {e}\")
+    st.warning("Grafik & evaluasi tidak bisa ditampilkan: {e}")
 
