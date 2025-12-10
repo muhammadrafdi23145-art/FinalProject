@@ -140,7 +140,8 @@ for name in ['Linear Regression', 'Random Forest', 'SVR']:
     preds = df[col]
     actual = df['close']
 
-    rmse = mean_squared_error(actual, preds, squared=False)
+    mse = mean_squared_error(actual, preds)
+    rmse = mse ** 0.5   # Perbaikan kompatibel
     mae = mean_absolute_error(actual, preds)
     r2 = r2_score(actual, preds)
 
@@ -148,3 +149,4 @@ for name in ['Linear Regression', 'Random Forest', 'SVR']:
 
 eval_df = pd.DataFrame(eval_data, columns=["Model", "RMSE", "MAE", "R²"])
 st.dataframe(eval_df)
+
