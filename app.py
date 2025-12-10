@@ -75,16 +75,19 @@ if st.button("Prediksi Harga Besok (H+1)"):
     st.info(f"Random Forest: Rp {price_rf:,.0f}")
     st.warning(f"SVR: Rp {price_svr:,.0f}")
 
-# =======================
-# GRAFIK PERBANDINGAN
-# =======================
-st.subheader("Grafik Prediksi Model vs Harga Asli (200 Hari Terakhir)")
+# ============================================
+# GRAFIK DAN EVALUASI (VERSI GOOGLE COLAB ASLI)
+# ============================================
+
+st.subheader("📉 Grafik Prediksi Model vs Harga Asli (200 Hari Terakhir)")
 
 try:
+    # Load dataset lagi (pastikan sama)
     df = pd.read_csv("BBRI.csv")
     df['timestamp'] = pd.to_datetime(df['timestamp'])
-
     df['Close_Log'] = np.log(df['close'])
+
+    # Feature-engineering ulang (harus sama 1:1 dengan training & Colab)
     df['MA5_Log'] = df['Close_Log'].rolling(5).mean()
     df['Target_Return'] = df['Close_Log'].shift(-1) - df['Close_Log']
     df['Feat_Return_1d'] = df['Close_Log'] - df['Close_Log'].shift(1)
@@ -96,59 +99,70 @@ try:
 
     features = ['Feat_Return_1d','Feat_Close_Open','Feat_High_Low','Feat_Dist_MA5','Feat_Vol_Change']
     X = df[features]
-    X_scaled_hist = scaler.transform(X)
 
-    preds_hist = {
-        'Linear Regression': models['Linear Regression'].predict(X_scaled_hist),
-        'Random Forest': models['Random Forest'].predict(X),
-        'SVR': models['SVR'].predict(X_scaled_hist)
-    }
+    # Sama seperti Colab: split TIDAK di-shuffle
+    from sklearn.model_selection import train_test_split
+    X_train, X_test = train_test_split(X, test_size=0.2, shuffle=False)
 
-    df['Pred_LR'] = df['close'] * np.exp(preds_hist['Linear Regression'])
-    df['Pred_RF'] = df['close'] * np.exp(preds_hist['Random Forest'])
-    df['Pred_SVR'] = df['close'] * np.exp(preds_hist['SVR'])
+    # Ambil log harga actual besok
+    actual_price = np.exp(df.loc[X_test.index, 'Close_Log'].shift(-1))
+    valid_idx = ~np.isnan(actual_price)
+    actual_price = actual_price[valid_idx]
+    test_dates = df.loc[X_test.index, 'timestamp'][valid_idx]
+
+    # Prediksi return dari 3 model
+    X_test_scaled = scaler.transform(X_test)
+
+    pred_lr = models['Linear Regression'].predict(X_test_scaled)[valid_idx]
+    pred_rf = models['Random Forest'].predict(X_test)[valid_idx]
+    pred_svr = models['SVR'].predict(X_test_scaled)[valid_idx]
+
+    # Konversi ke harga
+    close_today = np.exp(df.loc[X_test.index, 'Close_Log'])[valid_idx]
+
+    price_lr  = close_today * np.exp(pred_lr)
+    price_rf  = close_today * np.exp(pred_rf)
+    price_svr = close_today * np.exp(pred_svr)
 
     last_n = 200
     plt.figure(figsize=(12,5))
-    plt.plot(df['timestamp'].tail(last_n), df['close'].tail(last_n), label='Actual', linewidth=2)
-    plt.plot(df['timestamp'].tail(last_n), df['Pred_LR'].tail(last_n), '--', label='Linear Regression')
-    plt.plot(df['timestamp'].tail(last_n), df['Pred_RF'].tail(last_n), label='Random Forest')
-    plt.plot(df['timestamp'].tail(last_n), df['Pred_SVR'].tail(last_n), ':', label='SVR')
+    plt.plot(test_dates[-last_n:], actual_price[-last_n:], label='Harga Asli (Actual)', linewidth=2, color='black')
+    plt.plot(test_dates[-last_n:], price_lr[-last_n:], '--', label='Linear Regression')
+    plt.plot(test_dates[-last_n:], price_rf[-last_n:], '-', label='Random Forest')
+    plt.plot(test_dates[-last_n:], price_svr[-last_n:], ':', label='SVR')
+
     plt.xticks(rotation=45)
     plt.legend()
     plt.tight_layout()
     st.pyplot(plt)
 
+    # ============================
+    # EVALUASI — Sama Dengan Colab
+    # ============================
+    from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+    st.subheader("📊 Evaluasi Model (RMSE, MAE, R²) — Versi Test Set (Colab)")
+
+    eval_data = [
+        ["Linear Regression",
+         mean_squared_error(actual_price, price_lr, squared=False),
+         mean_absolute_error(actual_price, price_lr),
+         r2_score(actual_price, price_lr)],
+         
+        ["Random Forest",
+         mean_squared_error(actual_price, price_rf, squared=False),
+         mean_absolute_error(actual_price, price_rf),
+         r2_score(actual_price, price_rf)],
+
+        ["SVR",
+         mean_squared_error(actual_price, price_svr, squared=False),
+         mean_absolute_error(actual_price, price_svr),
+         r2_score(actual_price, price_svr)]
+    ]
+
+    eval_df = pd.DataFrame(eval_data, columns=["Model", "RMSE", "MAE", "R²"])
+    st.dataframe(eval_df)
+
 except Exception as e:
-    st.warning(f"Grafik tidak bisa ditampilkan: {e}")
-
-# ===========================
-# TABEL EVALUASI MODEL
-# ===========================
-
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-
-st.subheader("📊 Evaluasi Model (RMSE, MAE, R²)")
-
-eval_data = []
-
-for name in ['Linear Regression', 'Random Forest', 'SVR']:
-    col = (
-        'Pred_LR' if name == "Linear Regression" else
-        'Pred_RF' if name == "Random Forest" else
-        'Pred_SVR'
-    )
-
-    preds = df[col]
-    actual = df['close']
-
-    mse = mean_squared_error(actual, preds)
-    rmse = mse ** 0.5   # Perbaikan kompatibel
-    mae = mean_absolute_error(actual, preds)
-    r2 = r2_score(actual, preds)
-
-    eval_data.append([name, rmse, mae, r2])
-
-eval_df = pd.DataFrame(eval_data, columns=["Model", "RMSE", "MAE", "R²"])
-st.dataframe(eval_df)
+    st.warning(f\"Grafik & evaluasi tidak bisa ditampilkan: {e}\")
 
